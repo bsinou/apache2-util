@@ -1,0 +1,19 @@
+# configuration options that depend on the profile
+server:
+    port: 9999
+---
+spring:
+    profiles: development
+server:
+    port: 7070
+---
+spring:
+    profiles: staging
+server:
+    port: 8080
+---
+spring:
+    profiles: production
+server:
+    port: 8080
+    

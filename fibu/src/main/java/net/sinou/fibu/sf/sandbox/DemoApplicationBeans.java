@@ -15,7 +15,7 @@ import net.sinou.fibu.sf.FibuMicroservice;
 import net.sinou.fibu.sf.jpa.PaymentRepository;
 import net.sinou.fibu.sf.model.Payment;
 
-// @Profile("dev")
+@Profile("development")
 @Component
 public class DemoApplicationBeans {
 	private final Logger log = LoggerFactory.getLogger(FibuMicroservice.class);
