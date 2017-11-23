@@ -2,165 +2,42 @@ buildscript {
     repositories {
         mavenCentral()
     }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.8.RELEASE")
+    }
 }
 
-plugins {
-	id "java"
-	id "war"
- 	id "eclipse-wtp"
-	id "io.spring.dependency-management" version "1.0.3.RELEASE"
-	id "net.researchgate.release" version "2.4.0"
-}
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
 
 
-description = 'FiBu made easy'
+description = 'Simple tools to ease financial management of small organizations'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-
-// TP Versions
-ext {
-	// The base distribution versions provided and maintained by Spring
-	springBomVersion='2.0.8.RELEASE'
-	
-	// JPA
-	mariaDbClientVersion='2.1.2'
-	
-	// Secure the website to avoid SQL Injection attacks
-	owaspSanitizer='20171016.1'
-	jsoup='1.11.1'
-	
-	// provided by tomcat
-	jsp_api='5.5.23'
+jar {
+    baseName = 'fibu-service'
+    version =  '0.1.1'
 }
 
 repositories {
     mavenCentral()
 }
 
-dependencyManagement {
-  imports {
-        mavenBom "io.spring.platform:platform-bom:$springBomVersion"
-  }
-  
-  // Override default provided version
-  dependencies {
-  	dependency "org.mariadb.jdbc:mariadb-java-client:$mariaDbClientVersion"
-  }
-}
-
 
 dependencies {
-    compile (
-    	// Web
-    	"javax.servlet:javax.servlet-api",
-    	"javax.servlet:jstl",
-    	"com.fasterxml.jackson.core:jackson-databind",
-    	
-    	 	 	
-    	// JPA
-    	"org.hibernate:hibernate-core",
-    	"org.mariadb.jdbc:mariadb-java-client",
-    	"com.zaxxer:HikariCP",
+    compile(
+    	// Spring boot starter
+    	"org.springframework.boot:spring-boot-starter-web",
 
-		// Logging
-    	"ch.qos.logback:logback-classic",
-    	// Usefull only when migrating from jcl (jakarta Commons Logging) to slf4j
-    	// to intercept legacy calls to Log4j API and redirect them to SLF4J without changing the code 
-    	// "org.slf4j:jcl-over-slf4j",
-    	
-    	// Additional web utilities
-		// Security 
-		"com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:$owaspSanitizer",
-    	// parse HTML
-    	"org.jsoup:jsoup:$jsoup"
-    	
+    	// JPA
+    	"org.springframework.boot:spring-boot-starter-data-jpa",
+    	"com.h2database:h2", // Test with h2
+    	"org.hibernate:hibernate-core",
     )
 
-	compileOnly (
-		// provided by tomcat
-		"tomcat:jsp-api:$jsp_api", 
-	)
-
-    testCompile (
-		"junit:junit"
-	)
+    testCompile(
+    	"org.springframework.boot:spring-boot-starter-test"
+    )
 }
-
-// Current Jar
-jar {
-    baseName = 'fibu'
-    version =  version
-
-//     manifest { 
-//        symbolicName ='net.sinou.fibu' 
-//    }
-}
-
-
-eclipse {
-	project {
-		name = 'FiBu'
-    	comment = description
-    	// Add gradle nature
-    	natures 'org.eclipse.buildship.core.gradleprojectnature'
-    	buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
-	}
-
-
-
-// See gradle doc for more info 
-// https://docs.gradle.org/current/dsl/org.gradle.plugins.ide.eclipse.model.EclipseWtpComponent.html
-  	wtp {
-		component {
-			contextPath = 'fibu'
-			deployName = 'fibu'
-			resource sourcePath: 'webapp', deployPath: '/' 
-			resource sourcePath: 'src/main/java', deployPath: '/WEB-INF/classes' 
-			resource sourcePath: 'src/main/resources', deployPath: '/WEB-INF/classes'
-		}
-				
-		
-		facet {
-			// Work around to avoid inclusion of default facets
-			facets = []		
-			facet name: 'jst.java', version: '1.8'
-            facet name: 'jst.web', version: '3.0'
-            facet name: 'wst.jsdt.web', version: '1.0'
-		}
-  	}
-}
-
-// copy all used dependencies to the WEB-INF/lib folder
-task copyToLib(type: Copy) {
-    into "$buildDir/../webapp/WEB-INF/lib"
-    from configurations.runtime
-}
-
-
-// Workaround missing gradle setting property file after eclipse clean
-task copyToSettings(type : Copy) {
-	from 'src/test/resources/releng'
-	into "$buildDir/../.settings"
-}
-
-
-task buildAll () {
-	group 'FiBu Project'
-    description 'Build the full project, including clean and all Eclipse IDE settings files'
-
-	doLast {
-        println 'FiBu project has been built. Please refresh the browser of your IDE and clean the project.'
-    }
-}
-
-
-tasks.compileJava.dependsOn tasks.clean
-tasks.build.dependsOn tasks.copyToLib
-
-
-tasks.eclipse.dependsOn tasks.build
-tasks.eclipse.dependsOn tasks.cleanEclipse
-
-tasks.copyToSettings.dependsOn tasks.eclipse
-tasks.buildAll.dependsOn tasks.copyToSettings
