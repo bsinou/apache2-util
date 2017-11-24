@@ -14,12 +14,12 @@ import net.sinou.fibu.sf.model.Payment;
 @RestController
 public class SpringRestController {
 
-	@RequestMapping("/payments")
-	public List<Payment> greeting(@RequestParam(value = "status", defaultValue = "all") String status) {
-		List<Payment> payments = new ArrayList<Payment>();
-		Payment payment = new Payment(GregorianCalendar.getInstance(), BigDecimal.TEN, "GroceryStore",
-				"Weekly coffee stock");
-		payments.add(payment);
-		return payments;
-	}
+//	@RequestMapping("/payments")
+//	public List<Payment> greeting(@RequestParam(value = "status", defaultValue = "all") String status) {
+//		List<Payment> payments = new ArrayList<Payment>();
+//		Payment payment = new Payment(GregorianCalendar.getInstance(), BigDecimal.TEN, "GroceryStore",
+//				"Weekly coffee stock");
+//		payments.add(payment);
+//		return payments;
+//	}
 }

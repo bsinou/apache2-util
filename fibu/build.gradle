@@ -7,8 +7,13 @@ buildscript {
     }
 }
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
+plugins {
+	id "java"
+	id "eclipse"
+//	id "org.springframework.boot"
+	id "com.moowork.node" version "1.2.0" // See #1
+}
+
 apply plugin: 'org.springframework.boot'
 
 
@@ -28,11 +33,15 @@ repositories {
 
 dependencies {
     compile(
-    	// Spring boot starter
-    	"org.springframework.boot:spring-boot-starter-web",
-
+    	// Spring boot starters
+    	//"org.springframework.boot:spring-boot-starter-web", // MVC
+	 	"org.springframework.boot:spring-boot-starter-thymeleaf",
+    	"org.springframework.boot:spring-boot-starter-data-rest", // REST
+   		"org.springframework.boot:spring-boot-starter-data-jpa", // JPA
+ 
+     	"org.springframework.boot:spring-boot-devtools",
+ 
     	// JPA
-    	"org.springframework.boot:spring-boot-starter-data-jpa",
     	"com.h2database:h2", // Test with h2
     	"org.hibernate:hibernate-core",
     )
@@ -41,3 +50,11 @@ dependencies {
     	"org.springframework.boot:spring-boot-starter-test"
     )
 }
+
+
+// Notes
+
+// #1: com.moowork.node plugin
+// Enable to run any NodeJS script as part of the build. It does not depend on NodeJS (or NPM) being installed 
+// The plugin will download and manage NodeJS distributions, unpack them into your local .gradle directory 
+// and use them from there. See https://github.com/srs/gradle-node-plugin/blob/master/docs/node.md

@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import net.sinou.fibu.sf.FibuMicroservice;
+import net.sinou.fibu.sf.jpa.AccountRepository;
 import net.sinou.fibu.sf.jpa.PaymentRepository;
+import net.sinou.fibu.sf.model.Account;
 import net.sinou.fibu.sf.model.Payment;
 
 @Profile("development")
@@ -21,8 +23,11 @@ public class DemoApplicationBeans {
 	private final Logger log = LoggerFactory.getLogger(FibuMicroservice.class);
 
 	@Bean
-	public CommandLineRunner demo(PaymentRepository repository) {
+	public CommandLineRunner demo(AccountRepository accRepo, PaymentRepository repository) {
 		return (args) -> {
+			// save a couple of accounts
+			accRepo.save(new Account("512", "Caisse"));
+			accRepo.save(new Account("520", "Bank"));
 
 			// save a couple of payments
 			Calendar cal = GregorianCalendar.getInstance();
@@ -70,4 +75,5 @@ public class DemoApplicationBeans {
 			log.info("");
 		};
 	}
+
 }
