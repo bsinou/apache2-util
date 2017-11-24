@@ -1,3 +1,5 @@
+'use strict';
+
 const React = require('react');
 const ReactDOM = require('react-dom');
 const client = require('./client');
@@ -25,10 +27,8 @@ class FibuApp extends React.Component {
 class AccountList extends React.Component{
 	render() {
 		var accounts = this.props.accounts.map(account =>
-			<Account key={accounts._links.self.href} account={account}/>
+			<Account key={account._links.self.href} account={account}/>
 		);
-		alert('here')
-		console.log('et hop')
 		return (
 			<table>
 				<tbody>
@@ -37,7 +37,6 @@ class AccountList extends React.Component{
 						<th>Title</th>
 						<th>Description</th>
 						<th>Tax code</th>
-						
 					</tr>
 					{accounts}
 				</tbody>
@@ -50,14 +49,10 @@ class Account extends React.Component{
 	render() {
 		return (
 			<tr>
-				<td>code</td>
-				<td>title</td>
-				<td>description</td>
-				<td>taxCode</td>
-//				<td>{this.props.account.code}</td>
-//				<td>{this.props.account.title}</td>
-//				<td>{this.props.account.description}</td>
-//				<td>{this.props.account.taxCode}</td>
+				<td>{this.props.account.code}</td>
+				<td>{this.props.account.title}</td>
+				<td>{this.props.account.description}</td>
+				<td>{this.props.account.taxCode}</td>
 			</tr>
 		)
 	}
