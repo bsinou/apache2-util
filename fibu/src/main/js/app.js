@@ -1,21 +1,23 @@
+// Force pre-declaration of variables
 'use strict';
 
+// TPs
 const React = require('react');
 const ReactDOM = require('react-dom');
-const client = require('./client');
 
+// Own libraries
+const client = require('./client');
 const follow = require('./follow'); // function to hop multiple links by "rel"
 
+// Api base path
 var root = '/api';
 
-
-
-class FibuApp extends React.Component {
+class AccountTable extends React.Component {
 
 
 	constructor(props) {
 		super(props);
-		this.state = {accounts: [], attributes: [], pageSize: 2, links: {}};
+		this.state = {accounts: [], attributes: [], pageSize: 100, links: {}};
 		this.updatePageSize = this.updatePageSize.bind(this);
 		this.onCreate = this.onCreate.bind(this);
 		this.onDelete = this.onDelete.bind(this);
@@ -224,7 +226,6 @@ class AccountList extends React.Component{
 
 		return (
 			<div>
-				<input ref="pageSize" defaultValue={this.props.pageSize} onInput={this.handleInput}/>
 				<table>
 					<tbody>
 						<tr>
@@ -236,10 +237,12 @@ class AccountList extends React.Component{
 						</tr>
 						{accounts}
 					</tbody>
-					<div>
-						{navLinks}
-					</div>
 				</table>
+				<div>
+					{navLinks}
+					<label>Change number of result per page: </label>
+					<input ref="pageSize" defaultValue={this.props.pageSize} onInput={this.handleInput}/>
+				</div>
 			</div>
 		)
 	}
@@ -273,6 +276,6 @@ class Account extends React.Component{
 
 
 ReactDOM.render(
-		<FibuApp />,
+		<AccountTable />,
 		document.getElementById('react')
 )

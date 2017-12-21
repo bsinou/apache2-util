@@ -12,7 +12,7 @@ import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-/** Modelize a simple real life payment */
+/** Model a simple real life payment */
 @Entity
 @Table(name = "Payment")
 /** Enable JSON Serialization with Hibernate persisted objects */

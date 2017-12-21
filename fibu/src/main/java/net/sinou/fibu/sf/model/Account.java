@@ -8,7 +8,7 @@ import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-/** Reference account for entries and movement */
+/** Reference account for entries and movements */
 @Entity
 @Table(name = "Account")
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
