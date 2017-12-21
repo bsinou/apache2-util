@@ -5,7 +5,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Version;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /** Reference account for entries and movements */
@@ -23,6 +25,8 @@ public class Account {
 	private String title;
 	private String description;
 
+	private @Version @JsonIgnore Integer version;
+	
 	protected Account() {
 	}
 

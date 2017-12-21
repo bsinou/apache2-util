@@ -4,6 +4,7 @@
 // TPs
 const React = require('react');
 const ReactDOM = require('react-dom');
+const when = require('when');
 
 // Own libraries
 const client = require('./client');
@@ -20,6 +21,7 @@ class AccountTable extends React.Component {
 		this.state = {accounts: [], attributes: [], pageSize: 100, links: {}};
 		this.updatePageSize = this.updatePageSize.bind(this);
 		this.onCreate = this.onCreate.bind(this);
+		this.onUpdate = this.onUpdate.bind(this);
 		this.onDelete = this.onDelete.bind(this);
 		this.onNavigate = this.onNavigate.bind(this);	
 	}
@@ -35,14 +37,24 @@ class AccountTable extends React.Component {
 				headers: {'Accept': 'application/schema+json'}
 			}).then(schema => {
 				this.schema = schema.entity;
+				this.links = accountCollection.entity._links;
 				return accountCollection;
 			});
-		}).done(accountCollection => {
+		}).then(accountCollection => {
+			return accountCollection.entity._embedded.accounts.map(account =>
+					client({
+						method: 'GET',
+						path: account._links.self.href
+					})
+			);
+		}).then(accountPromises => {
+			return when.all(accountPromises);
+		}).done(accounts => {
 			this.setState({
-				accounts: accountCollection.entity._embedded.accounts,
+				accounts: accounts,
 				attributes: Object.keys(this.schema.properties),
 				pageSize: pageSize,
-				links: accountCollection.entity._links});
+				links: this.links});
 		});
 	}
 	
@@ -66,6 +78,26 @@ class AccountTable extends React.Component {
 		});
 	}
 	
+	onUpdate(account, updatedAccount) {
+		client({
+			method: 'PUT',
+			path: account.entity._links.self.href,
+			entity: updatedAccount,
+			headers: {
+				'Content-Type': 'application/json',
+				'If-Match': account.headers.Etag
+			}
+		}).done(response => {
+			this.loadFromServer(this.state.pageSize);
+		}, response => {
+			if (response.status.code === 412) {
+				alert('DENIED: Unable to update ' +
+						account.entity._links.self.href + '. Your copy is stale.');
+			}
+		});
+	}
+	
+	
 	onDelete(account) {
 		client({method: 'DELETE', path: account._links.self.href}).done(response => {
 			this.loadFromServer(this.state.pageSize);
@@ -73,15 +105,30 @@ class AccountTable extends React.Component {
 	}
 	
 	onNavigate(navUri) {
-		client({method: 'GET', path: navUri}).done(accountCollection => {
+		client({
+			method: 'GET',
+			path: navUri
+		}).then(accountCollection => {
+			this.links = accountCollection.entity._links;
+			return accountCollection.entity._embedded.accounts.map(account =>
+					client({
+						method: 'GET',
+						path: account._links.self.href
+					})
+			);
+		}).then(accountPromises => {
+			return when.all(accountPromises);
+		}).done(accounts => {
 			this.setState({
-				accounts: accountCollection.entity._embedded.accounts,
-				attributes: this.state.attributes,
+				accounts: accounts,
+				attributes: Object.keys(this.schema.properties),
 				pageSize: this.state.pageSize,
-				links: accountCollection.entity._links
+				links: this.links
 			});
 		});
 	}
+	
+	
 	
 	updatePageSize(pageSize) {
 		if (pageSize !== this.state.pageSize) {
@@ -98,11 +145,13 @@ class AccountTable extends React.Component {
 			<div>
 				<CreateAccountDialog attributes={this.state.attributes} onCreate={this.onCreate}/>
 				<AccountList accounts={this.state.accounts}
-							  links={this.state.links}
-							  pageSize={this.state.pageSize}
-							  onNavigate={this.onNavigate}
-							  onDelete={this.onDelete}
-							  updatePageSize={this.updatePageSize}/>
+								links={this.state.links}
+								pageSize={this.state.pageSize}
+								attributes={this.state.attributes}
+								onNavigate={this.onNavigate}
+								onUpdate={this.onUpdate}
+								onDelete={this.onDelete}
+								updatePageSize={this.updatePageSize}/>
 			</div>
 		)
 	}
@@ -160,7 +209,60 @@ class CreateAccountDialog extends React.Component {
 			</div>
 		)
 	}
-}
+};
+
+
+class UpdateDialog extends React.Component {
+
+	constructor(props) {
+		super(props);
+		this.handleSubmit = this.handleSubmit.bind(this);
+	}
+
+	handleSubmit(e) {
+		e.preventDefault();
+		var updatedAccount = {};
+		this.props.attributes.forEach(attribute => {
+			updatedAccount[attribute] = ReactDOM.findDOMNode(this.refs[attribute]).value.trim();
+		});
+		this.props.onUpdate(this.props.account, updatedAccount);
+		window.location = "#";
+	}
+
+	render() {
+		var inputs = this.props.attributes.map(attribute =>
+//		<p key={this.props.account.entity[attribute]}>
+		<p key={attribute}>
+					<input 
+						type="text"
+						placeholder={attribute}
+						defaultValue={this.props.account.entity[attribute]}
+						ref={attribute} 
+						className="field" />
+				</p>
+		);
+
+		var dialogId = "updateAccount-" + this.props.account.entity._links.self.href;
+
+		return (
+			<div key={this.props.account.entity._links.self.href}>
+				<a href={"#" + dialogId}>Update</a>
+				<div id={dialogId} className="modalDialog">
+					<div>
+						<a href="#" title="Close" className="close">X</a>
+
+						<h2>Update an account</h2>
+
+						<form>
+							{inputs}
+							<button onClick={this.handleSubmit}>Update</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		)
+	}
+};
 
 class AccountList extends React.Component{
 
@@ -207,8 +309,13 @@ class AccountList extends React.Component{
 	
 	render() {
 		var accounts = this.props.accounts.map(account =>
-			<Account key={account._links.self.href} account={account} onDelete={this.props.onDelete} />
-		);
+							<Account 
+								key={account.entity._links.self.href} 
+								account={account} 
+								attributes={this.props.attributes}
+							  	onUpdate={this.props.onUpdate}
+								onDelete={this.props.onDelete}/>	
+							);
 
 		var navLinks = [];
 		if ("first" in this.props.links) {
@@ -262,10 +369,15 @@ class Account extends React.Component{
 	render() {
 		return (
 			<tr>
-				<td>{this.props.account.code}</td>
-				<td>{this.props.account.title}</td>
-				<td>{this.props.account.description}</td>
-				<td>{this.props.account.taxCode}</td>
+				<td>{this.props.account.entity.code}</td>
+				<td>{this.props.account.entity.title}</td>
+				<td>{this.props.account.entity.description}</td>
+				<td>{this.props.account.entity.taxCode}</td>
+				<td>
+				<UpdateDialog account={this.props.account}
+							  attributes={this.props.attributes}
+							  onUpdate={this.props.onUpdate}/>
+				</td>
 				<td>
 					<button onClick={this.handleDelete}>Delete</button>
 				</td>
