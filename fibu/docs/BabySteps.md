@@ -19,7 +19,7 @@ List accounts
  curl -i http://localhost:7070/api/accounts
 ```
 
-Create new obects
+Create new objects
 
 ```
  # An account
