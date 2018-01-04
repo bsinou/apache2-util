@@ -40,8 +40,12 @@ dependencies {
    		"org.springframework.boot:spring-boot-starter-data-jpa", // JPA
  
    		"org.springframework.boot:spring-boot-starter-websocket", // Web sockets
-   		// "org.springframework.boot:spring-boot-starter-websocket",
 
+		// Security
+   		"org.springframework.boot:spring-boot-starter-security", 
+   		"org.thymeleaf.extras:thymeleaf-extras-springsecurity4", 
+
+		// Devtools
      	"org.springframework.boot:spring-boot-devtools",
  
     	// JPA
