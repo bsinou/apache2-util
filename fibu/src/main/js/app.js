@@ -9,12 +9,13 @@ const when = require('when');
 // Own libraries
 const client = require('./client');
 const follow = require('./follow'); // function to hop multiple links by "rel"
+const stompClient = require('./websocket-listener')
+
 
 // Api base path
 var root = '/api';
 
 class AccountTable extends React.Component {
-
 
 	constructor(props) {
 		super(props);
@@ -24,9 +25,10 @@ class AccountTable extends React.Component {
 		this.onUpdate = this.onUpdate.bind(this);
 		this.onDelete = this.onDelete.bind(this);
 		this.onNavigate = this.onNavigate.bind(this);	
+		this.refreshCurrentPage = this.refreshCurrentPage.bind(this);
+		this.refreshAndGoToLastPage = this.refreshAndGoToLastPage.bind(this);
 	}
 	
-
 	loadFromServer(pageSize) {
 		follow(client, root, [
 			{rel: 'accounts', params: {size: pageSize}}]
@@ -41,6 +43,7 @@ class AccountTable extends React.Component {
 				return accountCollection;
 			});
 		}).then(accountCollection => {
+			this.page = accountCollection.entity.page;
 			return accountCollection.entity._embedded.accounts.map(account =>
 					client({
 						method: 'GET',
@@ -51,6 +54,7 @@ class AccountTable extends React.Component {
 			return when.all(accountPromises);
 		}).done(accounts => {
 			this.setState({
+				page: this.page,
 				accounts: accounts,
 				attributes: Object.keys(this.schema.properties),
 				pageSize: pageSize,
@@ -59,22 +63,13 @@ class AccountTable extends React.Component {
 	}
 	
 	onCreate(newAccount) {
-		follow(client, root, ['accounts']).then(accountCollection => {
-			return client({
+		follow(client, root, ['accounts']).done(response => {
+			client({
 				method: 'POST',
-				path: accountCollection.entity._links.self.href,
+				path: response.entity._links.self.href,
 				entity: newAccount,
 				headers: {'Content-Type': 'application/json'}
 			})
-		}).then(response => {
-			return follow(client, root, [
-				{rel: 'accounts', params: {'size': this.state.pageSize}}]);
-		}).done(response => {
-			if (typeof response.entity._links.last != "undefined") {
-				this.onNavigate(response.entity._links.last.href);
-			} else {
-				this.onNavigate(response.entity._links.self.href);
-			}
 		});
 	}
 	
@@ -88,7 +83,8 @@ class AccountTable extends React.Component {
 				'If-Match': account.headers.Etag
 			}
 		}).done(response => {
-			this.loadFromServer(this.state.pageSize);
+			// 	let the websocket handler update the state 
+			// this.loadFromServer(this.state.pageSize);
 		}, response => {
 			if (response.status.code === 412) {
 				alert('DENIED: Unable to update ' +
@@ -97,19 +93,21 @@ class AccountTable extends React.Component {
 		});
 	}
 	
-	
 	onDelete(account) {
-		client({method: 'DELETE', path: account._links.self.href}).done(response => {
-			this.loadFromServer(this.state.pageSize);
-		});
-	}
-	
+		client({method: 'DELETE', path: account.entity._links.self.href})
+			.done(
+					response => {/* done via socket*/}, 
+					response => {/* TODO */}
+			);
+		}
+		
 	onNavigate(navUri) {
 		client({
 			method: 'GET',
 			path: navUri
 		}).then(accountCollection => {
 			this.links = accountCollection.entity._links;
+			this.page = accountCollection.entity.page;
 			return accountCollection.entity._embedded.accounts.map(account =>
 					client({
 						method: 'GET',
@@ -128,16 +126,61 @@ class AccountTable extends React.Component {
 		});
 	}
 	
-	
-	
 	updatePageSize(pageSize) {
 		if (pageSize !== this.state.pageSize) {
 			this.loadFromServer(pageSize);
 		}
 	}
+
+	refreshAndGoToLastPage(message) {
+		follow(client, root, [{
+			rel: 'accounts',
+			params: {size: this.state.pageSize}
+		}]).done(response => {
+			if (response.entity._links.last !== undefined) {
+				this.onNavigate(response.entity._links.last.href);
+			} else {
+				this.onNavigate(response.entity._links.self.href);
+			}
+		})
+	}
+
+	refreshCurrentPage(message) {
+		follow(client, root, [{
+			rel: 'accounts',
+			params: {
+				size: this.state.pageSize,
+				page: this.state.page.number
+			}
+		}]).then(accountCollection => {
+			this.links = accountCollection.entity._links;
+			this.page = accountCollection.entity.page;
+			return accountCollection.entity._embedded.accounts.map(account => {
+				return client({
+					method: 'GET',
+					path: account._links.self.href
+				})
+			});
+		}).then(accountPromises => {
+			return when.all(accountPromises);
+		}).then(accounts => {
+			this.setState({
+				page: this.page,
+				accounts: accounts,
+				attributes: Object.keys(this.schema.properties),
+				pageSize: this.state.pageSize,
+				links: this.links
+			});
+		});
+	}
 	
 	componentDidMount() {
 		this.loadFromServer(this.state.pageSize);
+		stompClient.register([
+			{route: '/topic/newAccount', callback: this.refreshAndGoToLastPage},
+			{route: '/topic/updateAccount', callback: this.refreshCurrentPage},
+			{route: '/topic/deleteAccount', callback: this.refreshCurrentPage}
+		]);
 	}
 
 	render() {
