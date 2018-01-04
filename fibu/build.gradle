@@ -39,6 +39,9 @@ dependencies {
     	"org.springframework.boot:spring-boot-starter-data-rest", // REST
    		"org.springframework.boot:spring-boot-starter-data-jpa", // JPA
  
+   		"org.springframework.boot:spring-boot-starter-websocket", // Web sockets
+   		// "org.springframework.boot:spring-boot-starter-websocket",
+
      	"org.springframework.boot:spring-boot-devtools",
  
     	// JPA
@@ -51,6 +54,41 @@ dependencies {
     )
 }
 
+// For more tips, see https://docs.gradle.org/current/dsl/org.gradle.plugins.ide.eclipse.model.EclipseClasspath.html
+eclipse {
+	project {
+		name = 'FiBu'
+		comment = description
+		
+		// Add gradle nature
+		natures 'org.eclipse.buildship.core.gradleprojectnature'
+		buildCommand 'org.eclipse.buildship.core.gradleprojectbuilder'
+		// More info and docs here: https://docs.gradle.org/current/dsl/org.gradle.plugins.ide.eclipse.model.EclipseProject.html
+		// Manually add compulsory eclipse property files for buildship plugin
+		def propFile = new File("$buildDir/../.settings/org.eclipse.buildship.core.prefs")
+		propFile.parentFile.mkdirs();
+		propFile.withWriter { w -> w << "connection.project.dir=\neclipse.preferences.version=1\n\n" }    	
+		
+		// Add Javascript folder to the src list at the top of eclipse's package explorer 
+		// This puts the folder at the wrong place
+		// sourceSets.main.java.srcDir "src/main/js"
+	}
+	
+	classpath {
+		// Default is false
+		downloadJavadoc = true
+		
+		file {
+			// manually add JavaScript folder to eclipse class path
+      		withXml {
+        		def root = it.asNode()
+        		def node = new Node(root, "classpathentry", [ kind:"src", path:"src/main/js"]) 
+				root.remove(node) // removes node from parent's children
+				root.children().add(2, node) // re-inserts node at desired position in child list
+        	}
+      	}
+  	}
+}
 
 // Notes
 
@@ -58,3 +96,38 @@ dependencies {
 // Enable to run any NodeJS script as part of the build. It does not depend on NodeJS (or NPM) being installed 
 // The plugin will download and manage NodeJS distributions, unpack them into your local .gradle directory 
 // and use them from there. See https://github.com/srs/gradle-node-plugin/blob/master/docs/node.md
+
+
+// #2 *Work in progress/draft* : Manually add JavaScript folder to eclipse class path
+
+/*
+// Below mechanism does not work because the real XML file seems to be generated after the eclipse task finished
+// Kept  yet for the other patterns
+task finalize  {
+	doLast {
+		println 'B4 tweack'
+    	tweackClassPathFile()
+    	println 'tweack done'
+    }
+}
+
+tasks.eclipse.finalizedBy(finalize)
+
+def tweackClassPathFile () {
+	def classpath = (new XmlParser()).parse('.classpath')    
+    def srcs = classpath.'classpathentry'.findAll { entry -> entry.@kind == "src"} 
+	srcs.each { m ->  println "path: " + m.@path }
+	
+	// def fragmentToAdd = new XmlParser( false, true ).parseText( '<classpathentry kind="src" path="src/main/js"/>')
+	// classpath.children().add( 1, fragmentToAdd )
+		
+	def node = new Node(classpath, "classpathentry", [ kind:"src", path:"src/main/js"]) // adds node as 2nd child
+	classpath.remove(node) // removes node from parent's children
+	classpath.children().add(2, node) // re-inserts node at desired position in child list
+		
+	//	def root = new XmlParser( false, true ).parseText( xml )
+	//	Insert this new node at position 2 in the children of the first coreEntry node
+	//	String outxml = groovy.xml.XmlUtil.serialize( root )
+}
+*/
+
