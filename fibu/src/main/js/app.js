@@ -83,12 +83,18 @@ class AccountTable extends React.Component {
 				'If-Match': account.headers.Etag
 			}
 		}).done(response => {
-			// 	let the websocket handler update the state 
+			// let the websocket handler update the state
 			// this.loadFromServer(this.state.pageSize);
 		}, response => {
 			if (response.status.code === 412) {
 				alert('DENIED: Unable to update ' +
 						account.entity._links.self.href + '. Your copy is stale.');
+			} else if (response.status.code === 403) {
+				alert('ACCESS DENIED: You are not authorized to update ' +
+						account.entity._links.self.href);
+			} else {
+				alert('Error: cannot update ' +
+						account.entity._links.self.href);
 			}
 		});
 	}
@@ -96,8 +102,16 @@ class AccountTable extends React.Component {
 	onDelete(account) {
 		client({method: 'DELETE', path: account.entity._links.self.href})
 			.done(
-					response => {/* done via socket*/}, 
-					response => {/* TODO */}
+				response => {/* done via socket */}, 
+				response => {
+					if (response.status.code === 403) {
+						alert('ACCESS DENIED: You are not authorized to delete ' +
+								account.entity._links.self.href);
+					} else {
+						alert('Error: cannot delete ' +
+								account.entity._links.self.href);
+					}
+				}
 			);
 		}
 		
@@ -274,7 +288,7 @@ class UpdateDialog extends React.Component {
 
 	render() {
 		var inputs = this.props.attributes.map(attribute =>
-//		<p key={this.props.account.entity[attribute]}>
+// <p key={this.props.account.entity[attribute]}>
 		<p key={attribute}>
 					<input 
 						type="text"
