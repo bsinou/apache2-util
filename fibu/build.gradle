@@ -86,10 +86,14 @@ eclipse {
 			// manually add JavaScript folder to eclipse class path
       		withXml {
         		def root = it.asNode()
-        		def node = new Node(root, "classpathentry", [ kind:"src", path:"src/main/js"]) 
-				root.remove(node) // removes node from parent's children
-				root.children().add(2, node) // re-inserts node at desired position in child list
-        	}
+        		// check if js src folder is already there
+        		def jsf = root.'classpathentry'.findAll { entry -> entry.@path == "src/main/js" } 
+        		if (jsf.size()== 0){
+	 		 		def node = new Node(root, "classpathentry", [ kind:"src", path:"src/main/js"]) 
+					root.remove(node) // removes node from parent's children
+					root.children().add(2, node) // re-inserts node at desired position in child list
+				}
+			}
       	}
   	}
 }
