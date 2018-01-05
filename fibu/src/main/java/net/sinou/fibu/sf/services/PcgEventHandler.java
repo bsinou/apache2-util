@@ -1,6 +1,6 @@
 package net.sinou.fibu.sf.services;
 
-import static net.sinou.fibu.sf.services.WebSocketConfiguration.MESSAGE_PREFIX;
+import static net.sinou.fibu.sf.conf.WebSocketConfiguration.MESSAGE_PREFIX;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
